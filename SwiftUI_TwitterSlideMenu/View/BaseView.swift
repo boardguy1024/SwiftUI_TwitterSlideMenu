@@ -12,7 +12,10 @@ struct BaseView: View {
     @State var showMenu: Bool = false
     
     @State var currentTab = "Home"
-
+    
+    @State var offset: CGFloat = 0
+    @State var lastStoredOffset: CGFloat = 0
+    
     // 透明のUItabBarを隠す(見えないが押せちゃうので)
     init() {
         UITabBar.appearance().isHidden = true
@@ -20,10 +23,10 @@ struct BaseView: View {
     
     var body: some View {
         
-       
+        
         let sideBarWidth = getRect().width - 90
-    
-       
+        
+        
         NavigationView {
             
             HStack(spacing: 0) {
@@ -33,7 +36,7 @@ struct BaseView: View {
                 VStack(spacing: 0) {
                     
                     TabView(selection: $currentTab) {
-                        Text("Home")
+                        Home(showMenu: $showMenu)
                             .navigationBarTitleDisplayMode(.inline)
                             .navigationBarHidden(true)
                             .tag("Home")
@@ -70,15 +73,48 @@ struct BaseView: View {
                         }
                         .padding(.top, 15)
                     }
-                  
+                    
                 }
                 .frame(width: getRect().width)
+                // BG when menu is showing
+                .overlay(
+                    Rectangle()
+                        .fill(
+                            // When showing menu =          300   /     300       / 5 = 0.2
+                            // When hiding  menu =           0    /      0        / 5 = 0
+                            Color.primary.opacity( Double((offset / sideBarWidth) / 5) )
+                        )
+                        .ignoresSafeArea(.container, edges: .vertical)
+                        .onTapGesture {
+                            withAnimation {
+                                showMenu.toggle()
+                            }
+                        }
+                )
+                
+                
             }
             // Max Width
             .frame(width: sideBarWidth + getRect().width)
             .offset(x: -sideBarWidth / 2)
+            .offset(x: offset)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
+        }
+        .animation(.easeOut, value: offset == 0)
+        .onChange(of: showMenu) { newValue in
+            
+            print("newValue: \(newValue)")
+            
+            if showMenu && offset == 0 {
+                offset = sideBarWidth
+                lastStoredOffset = sideBarWidth
+            }
+            
+            if !showMenu && offset == sideBarWidth {
+                offset = 0
+                lastStoredOffset = 0
+            }
         }
     }
     
